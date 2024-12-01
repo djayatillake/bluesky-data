@@ -1,3 +1,31 @@
+# This script collects follower data from the Bluesky social network API
+# 
+# Set up pipeline configuration for storing data in DuckDB:
+# - pipeline_name: identifies the database
+# - dataset_name: identifies the schema  
+# - table_name: identifies the table for follower data
+#
+# Create REST client to make paginated API calls to Bluesky
+# Uses cursor-based pagination to handle multiple pages of results
+#
+# get_followers resource function fetches followers for a given actor (user)
+# Makes paginated API calls to app.bsky.graph.getFollowers endpoint
+# Yields pages of follower data
+#
+# create_actor_field helper function adds the source actor to each follower record
+# This tracks which user's followers we're processing
+#
+# Main pipeline:
+# 1. Gets followers for initial actor from environment variable
+# 2. Adds actor field to each follower record
+# 3. Loads data into DuckDB, replacing existing data
+#
+# Secondary pipeline:
+# 1. Queries DuckDB for all follower handles collected
+# 2. For each handle, gets their followers 
+# 3. Appends new follower data to existing table
+# This builds a network graph of followers
+
 import dlt
 import os
 from dlt.sources.helpers.rest_client import RESTClient
