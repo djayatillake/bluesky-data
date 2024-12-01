@@ -29,11 +29,16 @@ pipeline = dlt.pipeline(
     dataset_name=dataset_name,
 )
 
+def create_actor_field(actor_str):
+    def actor_field(data):
+        data["actor"] = actor_str
+        return data
+    return actor_field
+
+
 actor = os.environ.get("bsky_actor")
-def actor_field(data):
-    data["actor"] = actor
-    return data
-load_info = pipeline.run(get_followers(actor).add_map(actor_field),
+
+load_info = pipeline.run(get_followers(actor).add_map(create_actor_field(actor)),
                          table_name=table_name,
                          write_disposition="replace",
                          )
@@ -47,10 +52,7 @@ con.execute(sql)
 actors = con.fetchall()
 
 for index, actor in enumerate(actors):
-    def actor_field(data):
-        data["actor"] = actor[0]
-        return data
-    load_info = pipeline.run(get_followers(actor[0]).add_map(actor_field),
+    load_info = pipeline.run(get_followers(actor[0]).add_map(create_actor_field(actor[0])),
                              table_name=table_name,
                              write_disposition="append",
                              )
