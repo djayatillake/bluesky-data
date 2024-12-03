@@ -4,7 +4,7 @@ from dlt.sources.helpers.rest_client import RESTClient
 from dlt.sources.helpers.rest_client.paginators import JSONResponseCursorPaginator
 
 # Shared constants
-pipeline_name = "bluesky_data"
+pipeline_name = "bluesky"
 dataset_name = "raw_http"
 actor = os.environ.get("bsky_actor")
 
