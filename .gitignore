@@ -162,7 +162,7 @@ cython_debug/
 #.idea/
 
 # duckdb databases
-*.duckdb
+*.duckdb*
 #dlt
 .dlt/
 append
