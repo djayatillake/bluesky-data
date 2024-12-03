@@ -26,7 +26,7 @@ pipeline.run(get_followers(actor).add_map(create_actor_field(actor)),
 logger.info(f"Collected follows for root actor: {actor}")
 
 con = duckdb.connect(database = pipeline_name + ".duckdb", read_only = False)
-sql = "SELECT handle FROM " + dataset_name + "." + table_name + " WHERE actor = '" + actor + "'"
+sql = "SELECT handle FROM " + dataset_name + "." + table_name + " WHERE actor = '" + actor + "' and actor != 'handle.invalid'"
 con.execute(sql)
 actors = con.fetchall()
 logger.info(f"Found {len(actors)} actors to process")
