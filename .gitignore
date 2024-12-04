@@ -166,3 +166,5 @@ cython_debug/
 #dlt
 .dlt/
 append
+#storage
+*.parquet

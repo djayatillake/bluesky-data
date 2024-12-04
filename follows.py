@@ -3,29 +3,35 @@ import logging
 import multiprocessing as mp
 from multiprocessing import Queue, Process
 from queue import Empty
+import os
+import pyarrow as pa
+import pyarrow.json as pj
+import pyarrow.parquet as pq
 from datetime import datetime
 from utils import (
-    get_followers,
     get_follows,
+    get_followers,
     create_actor_field,
-    pipeline_name,
-    dataset_name,
     actor,
+    pipeline_name,
     pipeline,
+    dataset_name,
 )
 
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
+
 logger = logging.getLogger(__name__)
 
 def format_progress(current, total):
-    percentage = (current / total) * 100
-    return f"[{current}/{total} - {percentage:.1f}%]"
+    """Format progress string"""
+    percent = (current / total) * 100
+    return f"[{current}/{total} {percent:.1f}%]"
 
 def fetch_actors():
-    logger.info(f"Starting data collection for root actor: {actor}")
+    """Fetch list of actors to process"""
     pipeline.run(get_followers(actor).add_map(create_actor_field(actor)),
                 table_name="followers",
                 write_disposition="append",
@@ -67,34 +73,72 @@ def collect_data(current_actor):
 
 def worker(task_queue, result_queue, worker_id, total_actors):
     """Worker process to collect data"""
-    processed = 0
     while True:
         try:
-            actor_tuple = task_queue.get(timeout=1)
+            actor_tuple = task_queue.get()
             if actor_tuple is None:  # Poison pill
+                logger.info(f"Worker {worker_id} received shutdown signal")
                 break
-            
-            current_actor = actor_tuple[0]
-            processed += 1
-            logger.info(f"Worker {worker_id} {format_progress(processed, total_actors//5)}: Processing {current_actor}")
-            result = collect_data(current_actor)
+                
+            actor_handle = actor_tuple[0]
+            logger.info(f"Worker {worker_id} processing {actor_handle}")
+            result = collect_data(actor_handle)
             result_queue.put(result)
             
-        except Empty:
-            break
         except Exception as e:
             logger.error(f"Worker {worker_id} error: {str(e)}")
             break
+    logger.info(f"Worker {worker_id} shutting down")
+
+def ensure_pond_directories():
+    """Ensure pond directories exist for storing parquet files"""
+    os.makedirs("pond/follows", exist_ok=True)
+    os.makedirs("pond/followers", exist_ok=True)
 
 def save_results(result_queue, num_actors):
-    """Save results to database from a single process"""
+    """Save results to parquet files and track progress"""
     processed = 0
     successful = 0
     failed = 0
     total_duration = 0
     
-    logger.info(f"Starting to save results for {num_actors} actors")
+    # Lists to store data
+    follows_data = []
+    followers_data = []
+    follows_size = 0
+    followers_size = 0
+    follows_file_count = 0
+    followers_file_count = 0
+    
+    # Ensure pond directories exist
+    ensure_pond_directories()
+    
+    logger.info(f"Starting to collect results for {num_actors} actors")
     start_time = datetime.now()
+    
+    def write_follows_batch():
+        nonlocal follows_data, follows_size, follows_file_count
+        if follows_data:
+            follows_file_count += 1
+            filename = f"pond/follows/follows_{follows_file_count:04d}.parquet"
+            # Convert JSON records directly to Arrow table and write to parquet
+            table = pa.Table.from_pylist(follows_data)
+            pq.write_table(table, filename)
+            logger.info(f"Wrote follows batch {follows_file_count} ({len(follows_data)} records, {follows_size/1024/1024:.1f}MB)")
+            follows_data = []
+            follows_size = 0
+            
+    def write_followers_batch():
+        nonlocal followers_data, followers_size, followers_file_count
+        if followers_data:
+            followers_file_count += 1
+            filename = f"pond/followers/followers_{followers_file_count:04d}.parquet"
+            # Convert JSON records directly to Arrow table and write to parquet
+            table = pa.Table.from_pylist(followers_data)
+            pq.write_table(table, filename)
+            logger.info(f"Wrote followers batch {followers_file_count} ({len(followers_data)} records, {followers_size/1024/1024:.1f}MB)")
+            followers_data = []
+            followers_size = 0
     
     while processed < num_actors:
         try:
@@ -108,25 +152,22 @@ def save_results(result_queue, num_actors):
             eta_minutes = eta_seconds / 60
             
             if success:
-                follows_data, followers_data = data
-                try:
-                    # Save follows
-                    pipeline.run(
-                        follows_data,
-                        table_name="follows",
-                        write_disposition="append",
-                    )
-                    # Save followers
-                    pipeline.run(
-                        followers_data,
-                        table_name="followers",
-                        write_disposition="append",
-                    )
-                    successful += 1
-                    logger.info(f"{progress} Saved data for {actor_name} (took {duration:.1f}s, avg {avg_duration:.1f}s, ETA {eta_minutes:.1f}min)")
-                except Exception as e:
-                    failed += 1
-                    logger.error(f"{progress} Error saving data for {actor_name}: {str(e)}")
+                actor_follows, actor_followers = data
+                
+                # Estimate size increase for follows
+                follows_size += sum(len(str(item)) for item in actor_follows)  # Rough estimate
+                follows_data.extend(actor_follows)
+                if follows_size >= 100 * 1024 * 1024:  # 100MB
+                    write_follows_batch()
+                
+                # Estimate size increase for followers
+                followers_size += sum(len(str(item)) for item in actor_followers)  # Rough estimate
+                followers_data.extend(actor_followers)
+                if followers_size >= 100 * 1024 * 1024:  # 100MB
+                    write_followers_batch()
+                
+                successful += 1
+                logger.info(f"{progress} Collected data for {actor_name} (took {duration:.1f}s, avg {avg_duration:.1f}s, ETA {eta_minutes:.1f}min)")
             else:
                 failed += 1
                 logger.error(f"{progress} Failed to process {actor_name}: {error}")
@@ -137,6 +178,10 @@ def save_results(result_queue, num_actors):
         except Exception as e:
             logger.error(f"Error in save_results: {str(e)}")
             break
+    
+    # Write any remaining data
+    write_follows_batch()
+    write_followers_batch()
     
     total_time = (datetime.now() - start_time).total_seconds()
     logger.info(f"Total processing time: {total_time/60:.1f} minutes")
@@ -162,31 +207,61 @@ def main():
         task_queue.put(actor_tuple)
     
     # Add poison pills for workers
-    num_processes = min(50, num_actors)  # Don't create more processes than actors
+    num_processes = min(99, num_actors)  # Don't create more processes than actors, tried 200 and it got too many requests errors from API
     for _ in range(num_processes):
         task_queue.put(None)
     
     # Start worker processes
     processes = []
+    process_last_active = {}  # Track when each process last produced output
     for i in range(num_processes):
         p = Process(target=worker, args=(task_queue, result_queue, i+1, num_actors))
+        p.daemon = True  # Make workers daemon processes so they exit when main process exits
         p.start()
+        process_last_active[p.pid] = datetime.now()
         processes.append(p)
     
-    # Save results in the main process
+    # Collect results and save to parquet
     successful, failed = save_results(result_queue, num_actors)
     
-    # Wait for all processes to complete
+    # Wait for processes to complete with timeout
+    logger.info("Waiting for worker processes to complete...")
+    
+    # Give processes up to 10 minutes each to complete, but check for stuck processes
+    MAX_INACTIVE_TIME = 600  # 10 minutes without any activity
+    GRACEFUL_SHUTDOWN_TIME = 30  # 30 seconds for graceful shutdown
+    
     for p in processes:
-        p.join()
+        try:
+            # Check if process has been inactive for too long
+            inactive_time = (datetime.now() - process_last_active[p.pid]).total_seconds()
+            
+            if inactive_time > MAX_INACTIVE_TIME:
+                logger.warning(f"Process {p.pid} has been inactive for {inactive_time:.1f} seconds, terminating...")
+                p.terminate()
+                p.join(timeout=GRACEFUL_SHUTDOWN_TIME)
+                if p.is_alive():
+                    logger.error(f"Process {p.pid} could not be terminated, killing...")
+                    os.kill(p.pid, 9)
+            else:
+                # Process is still active or recently active, give it time to complete
+                p.join(timeout=MAX_INACTIVE_TIME)
+                if p.is_alive():
+                    logger.warning(f"Process {p.pid} did not complete within timeout, terminating...")
+                    p.terminate()
+                    p.join(timeout=GRACEFUL_SHUTDOWN_TIME)
+                    if p.is_alive():
+                        logger.error(f"Process {p.pid} could not be terminated, killing...")
+                        os.kill(p.pid, 9)
+        except Exception as e:
+            logger.error(f"Error while joining process {p.pid}: {str(e)}")
     
     total_time = (datetime.now() - start_time).total_seconds()
     logger.info(f"Processing complete in {total_time/60:.1f} minutes:")
     logger.info(f"- Successful: {successful}")
     logger.info(f"- Failed: {failed}")
     logger.info(f"- Total: {num_actors}")
-    if failed > 0:
-        logger.warning(f"Failed to process {failed} actors")
+    logger.info(f"Data written to pond/follows/*.parquet and pond/followers/*.parquet")
 
 if __name__ == '__main__':
     main()
