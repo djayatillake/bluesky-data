@@ -1,4 +1,3 @@
-import duckdb
 import logging
 import multiprocessing as mp
 from multiprocessing import Queue, Process
@@ -8,15 +7,21 @@ import pyarrow as pa
 import pyarrow.json as pj
 import pyarrow.parquet as pq
 from datetime import datetime
-from utils import (
-    get_follows,
-    get_followers,
-    create_actor_field,
-    actor,
-    pipeline_name,
-    pipeline,
-    dataset_name,
-)
+from client import create_client
+
+# Configuration
+actor = os.getenv("bsky_actor")
+
+# Create a global client instance
+client = create_client()
+
+def get_followers(actor: str):
+    """Get all followers for an actor"""
+    return client.get_followers(actor)
+
+def get_follows(actor: str):
+    """Get all accounts that an actor follows"""
+    return client.get_follows(actor)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -32,37 +37,35 @@ def format_progress(current, total):
 
 def fetch_actors():
     """Fetch list of actors to process"""
-    pipeline.run(get_followers(actor).add_map(create_actor_field(actor)),
-                table_name="followers",
-                write_disposition="append",
-                )
-    pipeline.run(get_follows(actor).add_map(create_actor_field(actor)),
-                table_name="follows",
-                write_disposition="append",
-                )
+    # Set to store unique handles
+    unique_handles = set()
+    
+    # Get followers
+    for follower in get_followers(actor):
+        if follower['handle'] != 'handle.invalid':
+            unique_handles.add(follower['handle'])
+    
+    # Get follows
+    for follow in get_follows(actor):
+        if follow['handle'] != 'handle.invalid':
+            unique_handles.add(follow['handle'])
+    
     logger.info(f"Collected follows and followers for root actor: {actor}")
-
-    con = duckdb.connect(database=pipeline_name + ".duckdb", read_only=False)
-    sql = f"""
-    SELECT handle FROM {dataset_name}.followers WHERE actor = '{actor}' and actor != 'handle.invalid'
-    UNION
-    SELECT handle FROM {dataset_name}.follows WHERE actor = '{actor}' and actor != 'handle.invalid'
-    """
-    con.execute(sql)
-    actors = con.fetchall()
-    con.close()
-    logger.info(f"Found {len(actors)} actors to process")
-    return actors
+    logger.info(f"Found {len(unique_handles)} actors to process")
+    
+    # Add root actor
+    unique_handles.add(actor)
+    return list(unique_handles)
 
 def collect_data(current_actor):
     """Collect data for a single actor and return it"""
     start_time = datetime.now()
     try:
         logger.debug(f"Collecting follows for {current_actor}")
-        follows_data = list(get_follows(current_actor).add_map(create_actor_field(current_actor)))
+        follows_data = list(get_follows(current_actor))
         
         logger.debug(f"Collecting followers for {current_actor}")
-        followers_data = list(get_followers(current_actor).add_map(create_actor_field(current_actor)))
+        followers_data = list(get_followers(current_actor))
         
         duration = (datetime.now() - start_time).total_seconds()
         return current_actor, True, (follows_data, followers_data), None, duration
@@ -75,14 +78,13 @@ def worker(task_queue, result_queue, worker_id, total_actors):
     """Worker process to collect data"""
     while True:
         try:
-            actor_tuple = task_queue.get()
-            if actor_tuple is None:  # Poison pill
+            actor = task_queue.get()
+            if actor is None:  # Poison pill
                 logger.info(f"Worker {worker_id} received shutdown signal")
                 break
                 
-            actor_handle = actor_tuple[0]
-            logger.info(f"Worker {worker_id} processing {actor_handle}")
-            result = collect_data(actor_handle)
+            logger.info(f"Worker {worker_id} processing {actor}")
+            result = collect_data(actor)
             result_queue.put(result)
             
         except Exception as e:
@@ -157,13 +159,13 @@ def save_results(result_queue, num_actors):
                 # Estimate size increase for follows
                 follows_size += sum(len(str(item)) for item in actor_follows)  # Rough estimate
                 follows_data.extend(actor_follows)
-                if follows_size >= 100 * 1024 * 1024:  # 100MB
+                if follows_size >= 300 * 1024 * 1024:  # 100MB
                     write_follows_batch()
                 
                 # Estimate size increase for followers
                 followers_size += sum(len(str(item)) for item in actor_followers)  # Rough estimate
                 followers_data.extend(actor_followers)
-                if followers_size >= 100 * 1024 * 1024:  # 100MB
+                if followers_size >= 300 * 1024 * 1024:  # 100MB
                     write_followers_batch()
                 
                 successful += 1
@@ -203,8 +205,8 @@ def main():
     result_queue = Queue()
     
     # Add tasks to queue
-    for actor_tuple in actors:
-        task_queue.put(actor_tuple)
+    for actor in actors:
+        task_queue.put(actor)
     
     # Add poison pills for workers
     num_processes = min(99, num_actors)  # Don't create more processes than actors, tried 200 and it got too many requests errors from API
@@ -227,8 +229,8 @@ def main():
     # Wait for processes to complete with timeout
     logger.info("Waiting for worker processes to complete...")
     
-    # Give processes up to 10 minutes each to complete, but check for stuck processes
-    MAX_INACTIVE_TIME = 600  # 10 minutes without any activity
+    # Give processes up to 1 minutes each to complete, but check for stuck processes
+    MAX_INACTIVE_TIME = 60  # 1 minutes without any activity
     GRACEFUL_SHUTDOWN_TIME = 30  # 30 seconds for graceful shutdown
     
     for p in processes:
