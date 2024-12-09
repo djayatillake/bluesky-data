@@ -1,8 +1,7 @@
 MODEL (
   name raw_http_sqlmesh.incremental_followers,
-  kind INCREMENTAL_BY_TIME_RANGE (
-    time_column _dlt_load_time,
-  ),
+  kind INCREMENTAL_BY_UNIQUE_KEY (
+    unique_key (handle, actor)  ),
 );
 
 SELECT
