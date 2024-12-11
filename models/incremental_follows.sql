@@ -2,6 +2,9 @@ MODEL (
   name raw_http_sqlmesh.incremental_follows,
   kind INCREMENTAL_BY_UNIQUE_KEY (
     unique_key (handle, actor)  ),
+    audits (
+      unique_combination_of_columns(columns := (handle, actor)),
+    ),
 );
 
 SELECT
