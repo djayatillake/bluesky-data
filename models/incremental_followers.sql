@@ -25,3 +25,5 @@ FROM
   raw_http.followers
 WHERE
   TO_TIMESTAMP(CAST(_dlt_load_id AS DOUBLE)) BETWEEN @start_ds AND @end_ds
+QUALIFY
+  ROW_NUMBER() OVER (PARTITION BY handle, actor ORDER BY _dlt_load_time DESC) = 1
