@@ -1,0 +1,48 @@
+- name: '"bluesky"."jetstream"."jetstream"'
+  columns:
+    commit: STRUCT(cid TEXT, collection TEXT, operation TEXT, record MAP(TEXT, JSON),
+      rev TEXT, rkey TEXT)
+    did: TEXT
+    kind: TEXT
+    time_us: BIGINT
+    identity: STRUCT(did TEXT, handle TEXT, seq BIGINT, "time" TEXT)
+    account: STRUCT(active BOOLEAN, did TEXT, seq BIGINT, "time" TEXT, status TEXT)
+    day: BIGINT
+    hour: BIGINT
+    month: BIGINT
+    year: BIGINT
+- name: '"bluesky"."raw_http"."_dlt_loads"'
+  columns:
+    load_id: TEXT
+    schema_name: TEXT
+    status: BIGINT
+    inserted_at: TIMESTAMPTZ
+    schema_version_hash: TEXT
+- name: '"bluesky"."raw_http"."followers"'
+  columns:
+    did: TEXT
+    handle: TEXT
+    display_name: TEXT
+    avatar: TEXT
+    created_at: TIMESTAMPTZ
+    description: TEXT
+    indexed_at: TIMESTAMPTZ
+    actor: TEXT
+    _dlt_load_id: TEXT
+    _dlt_id: TEXT
+    associated__chat__allow_incoming: TEXT
+    associated__labeler: BOOLEAN
+- name: '"bluesky"."raw_http"."follows"'
+  columns:
+    did: TEXT
+    handle: TEXT
+    display_name: TEXT
+    avatar: TEXT
+    created_at: TIMESTAMPTZ
+    description: TEXT
+    indexed_at: TIMESTAMPTZ
+    actor: TEXT
+    _dlt_load_id: TEXT
+    _dlt_id: TEXT
+    associated__chat__allow_incoming: TEXT
+    associated__labeler: BOOLEAN
