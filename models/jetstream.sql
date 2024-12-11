@@ -2,7 +2,9 @@ MODEL (
   name raw_http_sqlmesh.jetstream,
   kind INCREMENTAL_BY_TIME_RANGE (
     time_column ts
-  )
+  ),
+  allow_partials true,
+  cron '@hourly',
 );
 
 SELECT 
