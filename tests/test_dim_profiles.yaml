@@ -1,0 +1,116 @@
+test_dim_profiles:
+  model: '"bluesky"."raw_http_sqlmesh"."dim_profiles"'
+  inputs:
+    '"bluesky"."raw_http_sqlmesh"."incremental_followers"':
+    - did: did:plc:t5kceuyno4e7nn2f6gqjhrau
+      handle: 0-0-1.bsky.social
+      display_name: ''
+      avatar: https://cdn.bsky.app/img/avatar/plain/did:plc:t5kceuyno4e7nn2f6gqjhrau/bafkreihpd3tod5uku43cx23g5azjmjcrollodjs6cwh4ghlqv3iz6trpwu@jpeg
+      created_at: 2024-09-28 14:50:36.706000
+      description:
+      indexed_at: 2024-09-28 14:50:36.706000
+      actor: howard.fm
+      _dlt_load_id: '1733276156.3742762'
+      _dlt_id: zPk2qRBKp/KRhw
+      associated__chat__allow_incoming: all
+      associated__labeler:
+      _dlt_load_time: 2024-12-04 01:35:56.374276
+    - did: did:plc:t5kceuyno4e7nn2f6gqjhrau
+      handle: 0-0-1.bsky.social
+      display_name: ''
+      avatar: https://cdn.bsky.app/img/avatar/plain/did:plc:t5kceuyno4e7nn2f6gqjhrau/bafkreihpd3tod5uku43cx23g5azjmjcrollodjs6cwh4ghlqv3iz6trpwu@jpeg
+      created_at: 2024-09-28 14:50:36.706000
+      description:
+      indexed_at: 2024-09-28 14:50:36.706000
+      actor: timbl.bsky.social
+      _dlt_load_id: '1733274321.225736'
+      _dlt_id: nl1YJ0ios/WUjw
+      associated__chat__allow_incoming: all
+      associated__labeler:
+      _dlt_load_time: 2024-12-04 01:05:21.225736
+    - did: did:plc:iqact36ierjjifo44iyrrpzc
+      handle: 0-me-0.bsky.social
+      display_name: Me
+      avatar: https://cdn.bsky.app/img/avatar/plain/did:plc:iqact36ierjjifo44iyrrpzc/bafkreif7ngqm3g2mzegf4ub2scfhg5exyncr2gkzw4byroxdckcgvyj5ca@jpeg
+      created_at: 2024-11-14 11:17:21.078000
+      description: "Just here to see what all the fuss is about. Might stay, might\
+        \ not.\n"
+      indexed_at: 2024-11-14 11:31:32.078000
+      actor: politicshome.bsky.social
+      _dlt_load_id: '1733271795.349356'
+      _dlt_id: AO+vCVtcKeAM3A
+      associated__chat__allow_incoming:
+      associated__labeler:
+      _dlt_load_time: 2024-12-04 00:23:15.349356
+    '"bluesky"."raw_http_sqlmesh"."incremental_follows"':
+    - did: did:plc:dvsoqwowbcpw3dbabenl2tpn
+      handle: 0.5ritter.de
+      display_name: Moritz Halbritter
+      avatar: https://cdn.bsky.app/img/avatar/plain/did:plc:dvsoqwowbcpw3dbabenl2tpn/bafkreid6hvwrn5c5njxv3afoxyh26u2vy5c5ieptqms5frg7vmdfat5vwq@jpeg
+      created_at: 2024-11-08 10:10:12.379000
+      description: "Putting bugs into Spring Boot since 2022.\n\nSpring Boot team\
+        \ member | Lead of http://start.spring.io and Spring Initializr\n\nMore socials\
+        \ and info: https://mhalbritter.github.io/"
+      indexed_at: 2024-11-15 08:26:03.839000
+      actor: apitrove.bsky.social
+      _dlt_load_id: '1733272249.792701'
+      _dlt_id: ar3aCLUCOA37Hw
+      associated__chat__allow_incoming: all
+      associated__labeler:
+      _dlt_load_time: 2024-12-04 00:30:49.792701
+    - did: did:plc:enbrrdq6tpcicuv7pcwjtar6
+      handle: 00000000000000000.bsky.social
+      display_name: 𝐙𝐄𝐑𝐎
+      avatar: https://cdn.bsky.app/img/avatar/plain/did:plc:enbrrdq6tpcicuv7pcwjtar6/bafkreibzbbeyvi6fhykojjaztyzklxipsncqpxoorkxu6d465iz2lwurcu@jpeg
+      created_at: 2023-06-21 00:32:17.073000
+      description:
+      indexed_at: 2024-01-20 06:08:37.657000
+      actor: blobs.lol
+      _dlt_load_id: '1733272247.4118469'
+      _dlt_id: 5Agc4/6WsSELCQ
+      associated__chat__allow_incoming:
+      associated__labeler:
+      _dlt_load_time: 2024-12-04 00:30:47.411847
+    - did: did:plc:zdl3xphntx3xd7m2jq7wmtwm
+      handle: 000240.bsky.social
+      display_name: ''
+      avatar: https://cdn.bsky.app/img/avatar/plain/did:plc:zdl3xphntx3xd7m2jq7wmtwm/bafkreiaupzx5bhw26pezjxekqkqq3cr6aboke5pyohqeb64cein2urhyvy@jpeg
+      created_at: 2023-10-26 12:16:20.835000
+      description: Taxidermist. Bloomberg user since 1999. Montreal.
+      indexed_at: 2024-11-11 13:15:48.184000
+      actor: plewis.bsky.social
+      _dlt_load_id: '1733272338.583651'
+      _dlt_id: r8Hs8mTQ/gKiLg
+      associated__chat__allow_incoming: all
+      associated__labeler:
+      _dlt_load_time: 2024-12-04 00:32:18.583651
+  outputs:
+    query:
+    - did: did:plc:dvsoqwowbcpw3dbabenl2tpn
+      handle: 0.5ritter.de
+      display_name: Moritz Halbritter
+      avatar: https://cdn.bsky.app/img/avatar/plain/did:plc:dvsoqwowbcpw3dbabenl2tpn/bafkreid6hvwrn5c5njxv3afoxyh26u2vy5c5ieptqms5frg7vmdfat5vwq@jpeg
+      description: "Putting bugs into Spring Boot since 2022.\n\nSpring Boot team\
+        \ member | Lead of http://start.spring.io and Spring Initializr\n\nMore socials\
+        \ and info: https://mhalbritter.github.io/"
+    - did: did:plc:zdl3xphntx3xd7m2jq7wmtwm
+      handle: 000240.bsky.social
+      display_name: ''
+      avatar: https://cdn.bsky.app/img/avatar/plain/did:plc:zdl3xphntx3xd7m2jq7wmtwm/bafkreiaupzx5bhw26pezjxekqkqq3cr6aboke5pyohqeb64cein2urhyvy@jpeg
+      description: Taxidermist. Bloomberg user since 1999. Montreal.
+    - did: did:plc:t5kceuyno4e7nn2f6gqjhrau
+      handle: 0-0-1.bsky.social
+      display_name: ''
+      avatar: https://cdn.bsky.app/img/avatar/plain/did:plc:t5kceuyno4e7nn2f6gqjhrau/bafkreihpd3tod5uku43cx23g5azjmjcrollodjs6cwh4ghlqv3iz6trpwu@jpeg
+      description:
+    - did: did:plc:enbrrdq6tpcicuv7pcwjtar6
+      handle: 00000000000000000.bsky.social
+      display_name: 𝐙𝐄𝐑𝐎
+      avatar: https://cdn.bsky.app/img/avatar/plain/did:plc:enbrrdq6tpcicuv7pcwjtar6/bafkreibzbbeyvi6fhykojjaztyzklxipsncqpxoorkxu6d465iz2lwurcu@jpeg
+      description:
+    - did: did:plc:iqact36ierjjifo44iyrrpzc
+      handle: 0-me-0.bsky.social
+      display_name: Me
+      avatar: https://cdn.bsky.app/img/avatar/plain/did:plc:iqact36ierjjifo44iyrrpzc/bafkreif7ngqm3g2mzegf4ub2scfhg5exyncr2gkzw4byroxdckcgvyj5ca@jpeg
+      description: "Just here to see what all the fuss is about. Might stay, might\
+        \ not.\n"
